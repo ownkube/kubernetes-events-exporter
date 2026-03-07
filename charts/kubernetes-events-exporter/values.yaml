@@ -1,0 +1,98 @@
+# Default values for kubernetes-events-exporter
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ownkube/kubernetes-events-exporter
+  pullPolicy: IfNotPresent
+  tag: ""  # defaults to appVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+rbac:
+  create: true
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "2112"
+  prometheus.io/path: "/metrics"
+
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+resources: {}
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # limits:
+  #   cpu: 200m
+  #   memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Metrics service (for ServiceMonitor / Prometheus scraping)
+service:
+  enabled: true
+  port: 2112
+
+serviceMonitor:
+  enabled: false
+  # interval: 30s
+  # additionalLabels: {}
+
+# Leader election for HA deployments
+leaderElection:
+  enabled: false
+
+# Extra environment variables (useful for secrets)
+extraEnv: []
+  # - name: ELASTIC_API_KEY
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: elastic-secret
+  #       key: api-key
+
+# Extra volumes and volume mounts (for TLS certs, etc.)
+extraVolumes: []
+extraVolumeMounts: []
+
+# -------------------------------------------------------
+# Event exporter configuration
+# This becomes the config.yaml ConfigMap
+# -------------------------------------------------------
+config:
+  logLevel: info
+  logFormat: json
+  maxEventAgeSeconds: 60
+  metricsNamePrefix: "event_exporter_"
+  # clusterName: ""
+  # clusterEnvironment: ""
+  # kubeQPS: 100
+  # kubeBurst: 500
+
+  route:
+    routes:
+      - match:
+          - receiver: "dump"
+
+  receivers:
+    - name: "dump"
+      stdout: {}

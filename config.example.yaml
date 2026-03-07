@@ -1,0 +1,243 @@
+# =============================================================================
+# Kubernetes Event Exporter - Example Configuration
+# =============================================================================
+# This file shows all available options. Only configure what you need.
+# Environment variables can be used anywhere: ${MY_SECRET}
+
+# -----------------------------------------------------------------------------
+# General Settings
+# -----------------------------------------------------------------------------
+logLevel: info                        # debug | info | warn | error
+logFormat: json                       # json | text
+maxEventAgeSeconds: 60                # ignore events older than this (default: 5)
+
+# Optional: tag every event with your cluster info
+clusterName: "my-cluster"
+clusterEnvironment: "production"      # e.g. production, staging, dev
+
+# Optional: tune K8s API rate limits for high-volume clusters
+# kubeQPS: 100
+# kubeBurst: 500
+
+# Optional: watch only one namespace (default: all)
+# namespace: my-namespace
+
+# Optional: skip looking up labels/annotations on involved objects
+# omitLookup: false
+
+# Optional: metadata cache size (default: 1024)
+# cacheSize: 1024
+
+# Optional: prefix for Prometheus metrics exposed at /metrics
+# metricsNamePrefix: "event_exporter_"
+
+# Optional: enable leader election for HA (multiple replicas)
+# leaderElection:
+#   enabled: true
+#   leaderElectionID: "kubernetes-events-exporter"
+
+# -----------------------------------------------------------------------------
+# Routing - decide which events go where
+# -----------------------------------------------------------------------------
+route:
+  routes:
+    # Send ALL events to stdout (good starting point)
+    - match:
+        - receiver: "stdout"
+
+    # Send Warning events to Slack
+    - match:
+        - type: "Warning"
+          receiver: "slack"
+
+    # Drop test namespaces, send critical events to alerting
+    - drop:
+        - namespace: "test-.*"
+        - type: "Normal"
+      match:
+        - receiver: "alerts"
+
+# -----------------------------------------------------------------------------
+# Receivers - where events are sent
+# -----------------------------------------------------------------------------
+receivers:
+
+  # --- Stdout (simplest, great for debugging) ---
+  - name: "stdout"
+    stdout:
+      deDot: true                     # replace dots in label keys with _
+
+  # --- Loki (popular for Grafana users) ---
+  - name: "loki"
+    loki:
+      url: http://loki:3100/loki/api/v1/push
+
+      # Basic auth (for Grafana Cloud / Enterprise)
+      # username: ${LOKI_USERNAME}
+      # password: ${LOKI_PASSWORD}
+
+      # Custom headers
+      # headers:
+      #   X-Scope-OrgID: my-tenant
+
+      # Stream labels - Go templates supported!
+      streamLabels:
+        app: kube-events
+        namespace: "{{ .InvolvedObject.Namespace }}"
+        kind: "{{ .InvolvedObject.Kind }}"
+
+      # TLS for self-signed certs
+      # tls:
+      #   insecureSkipVerify: true
+
+  # --- Prometheus (expose events as metrics) ---
+  - name: "prometheus-events"
+    prometheus:
+      eventsMetricsNamePrefix: "event_exporter_"
+      reasonFilter:
+        Pod:
+          - "CrashLoopBackOff"
+          - "OOMKilled"
+          - "FailedMount"
+        Node:
+          - "NotReady"
+          - "MemoryPressure"
+
+  # --- Elasticsearch ---
+  - name: "elasticsearch"
+    elasticsearch:
+      hosts:
+        - http://elasticsearch:9200
+      index: kube-events
+      indexFormat: "kube-events-{2006-01-02}"
+      # username: ${ES_USERNAME}
+      # password: ${ES_PASSWORD}
+      # apiKey: ${ES_API_KEY}
+      useEventID: true
+      deDot: true
+
+  # --- OpenSearch ---
+  # - name: "opensearch"
+  #   opensearch:
+  #     hosts:
+  #       - http://opensearch:9200
+  #     indexFormat: "kube-events-{2006-01-02}"
+  #     username: ${OS_USERNAME}
+  #     password: ${OS_PASSWORD}
+  #     deDot: true
+
+  # --- Slack ---
+  - name: "slack"
+    slack:
+      token: ${SLACK_TOKEN}
+      channel: "#k8s-alerts"
+      message: "{{ .Message }}"
+      fields:
+        namespace: "{{ .Namespace }}"
+        reason: "{{ .Reason }}"
+        object: "{{ .InvolvedObject.Name }}"
+
+  # --- Webhook ---
+  # - name: "webhook"
+  #   webhook:
+  #     endpoint: "https://my-service.com/events"
+  #     headers:
+  #       X-API-KEY: ${WEBHOOK_API_KEY}
+
+  # --- Opsgenie ---
+  - name: "alerts"
+    opsgenie:
+      apiKey: ${OPSGENIE_API_KEY}
+      priority: "P3"
+      message: "{{ .Reason }} - {{ .InvolvedObject.Namespace }}/{{ .InvolvedObject.Name }}"
+      alias: "{{ .UID }}"
+      description: "<pre>{{ toPrettyJson . }}</pre>"
+      tags:
+        - "event"
+        - "{{ .InvolvedObject.Kind }}"
+
+  # --- Kafka ---
+  # - name: "kafka"
+  #   kafka:
+  #     topic: "kube-events"
+  #     brokers:
+  #       - "kafka:9092"
+  #     compressionCodec: "snappy"
+  #     sasl:
+  #       enable: true
+  #       username: ${KAFKA_USER}
+  #       password: ${KAFKA_PASS}
+  #       mechanism: "sha512"
+
+  # --- AWS SNS (supports FIFO topics) ---
+  # - name: "sns"
+  #   sns:
+  #     topicARN: "arn:aws:sns:us-east-1:123456789:events"
+  #     region: "us-east-1"
+  #     messageGroupId: "k8s-events"  # for FIFO topics
+
+  # --- AWS SQS ---
+  # - name: "sqs"
+  #   sqs:
+  #     queueName: "kube-events"
+  #     region: "us-east-1"
+
+  # --- AWS Kinesis ---
+  # - name: "kinesis"
+  #   kinesis:
+  #     streamName: "kube-events"
+  #     region: "us-east-1"
+
+  # --- AWS Firehose ---
+  # - name: "firehose"
+  #   firehose:
+  #     deliveryStreamName: "kube-events"
+  #     region: "us-east-1"
+
+  # --- AWS EventBridge ---
+  # - name: "eventbridge"
+  #   eventbridge:
+  #     detailType: "KubernetesEvent"
+  #     source: "kubernetes-events-exporter"
+  #     eventBusName: "default"
+  #     region: "us-east-1"
+
+  # --- GCP Pub/Sub ---
+  # - name: "pubsub"
+  #   pubsub:
+  #     gcloud_project_id: "my-project"
+  #     topic: "kube-events"
+  #     create_topic: false
+
+  # --- BigQuery ---
+  # - name: "bigquery"
+  #   bigquery:
+  #     project: "my-project"
+  #     dataset: "kube_events"
+  #     table: "events"
+  #     credentials_path: "/secrets/gcp.json"
+  #     batch_size: 100
+  #     interval_seconds: 30
+
+  # --- Microsoft Teams ---
+  # - name: "teams"
+  #   teams:
+  #     endpoint: "https://outlook.office.com/webhook/..."
+
+  # --- Syslog ---
+  # - name: "syslog"
+  #   syslog:
+  #     network: "tcp"
+  #     address: "127.0.0.1:11514"
+  #     tag: "k8s.event"
+
+  # --- File ---
+  # - name: "file"
+  #   file:
+  #     path: "/var/log/kube-events.log"
+
+  # --- Pipe ---
+  # - name: "pipe"
+  #   pipe:
+  #     path: "/dev/stdout"
+  #     deDot: true

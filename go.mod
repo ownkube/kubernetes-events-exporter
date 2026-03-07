@@ -16,7 +16,7 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/exporter-toolkit v0.10.0
 	github.com/slack-go/slack v0.12.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.11.1
 	github.com/xdg-go/scram v1.1.2
 	google.golang.org/api v0.107.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0

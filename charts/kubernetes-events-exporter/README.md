@@ -66,6 +66,7 @@ The `config` block maps directly to the exporter's YAML configuration:
 | `config.logLevel` | string | `info` | Log level: `debug`, `info`, `warn`, `error` |
 | `config.logFormat` | string | `json` | Log format: `json`, `text` |
 | `config.maxEventAgeSeconds` | int | `60` | Discard events older than this |
+| `config.namespace` | string | `""` | Watch one or more namespaces (comma-separated). Empty means all namespaces |
 | `config.metricsNamePrefix` | string | `event_exporter_` | Prefix for Prometheus metrics |
 | `config.clusterName` | string | `""` | Tag events with a cluster name |
 | `config.clusterEnvironment` | string | `""` | Tag events with an environment label |
@@ -116,6 +117,35 @@ config:
         index: kube-events
         indexFormat: "kube-events-{2006-01-02}"
         apiKey: ${ELASTIC_API_KEY}
+```
+
+### Export events as Prometheus metrics
+
+```yaml
+config:
+  route:
+    routes:
+      - match:
+          - receiver: "prometheus"
+  receivers:
+    - name: "prometheus"
+      prometheus:
+        eventsMetricsNamePrefix: "event_exporter_"
+        reasonFilter:
+          Pod:
+            - "FailedScheduling"
+          ReplicaSet:
+            - "FailedCreate"
+            - "SuccessfulCreate"
+```
+
+This configuration produces a single metric named `event_exporter_event_count` with labels: `kind`, `name`, `namespace`, `reason`, and `source_component`.
+
+Example series:
+
+```text
+event_exporter_event_count{kind="pod",name="nginx-abc",namespace="default",reason="FailedScheduling",source_component="kubelet"}
+event_exporter_event_count{kind="replicaset",name="web-6f6c9d",namespace="apps",reason="FailedCreate",source_component="replicaset-controller"}
 ```
 
 ### HA deployment with leader election

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,7 +23,7 @@ type EventCallback func(event *event.EnrichedEvent)
 
 type Watcher struct {
 	wg                  sync.WaitGroup
-	informer            cache.SharedInformer
+	informers           []cache.SharedInformer
 	stopper             chan struct{}
 	objectMetadataCache MetadataResolver
 	omitLookup          bool
@@ -35,11 +36,15 @@ type Watcher struct {
 
 func NewWatcher(config *rest.Config, namespace string, MaxEventAgeSeconds int64, counters *observability.Counters, fn EventCallback, omitLookup bool, cacheSize int) *Watcher {
 	clientset := kubernetes.NewForConfigOrDie(config)
-	factory := informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithNamespace(namespace))
-	informer := factory.Core().V1().Events().Informer()
+	namespaces := parseNamespaces(namespace)
+	informerList := make([]cache.SharedInformer, 0, len(namespaces))
+	for _, ns := range namespaces {
+		factory := informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithNamespace(ns))
+		informerList = append(informerList, factory.Core().V1().Events().Informer())
+	}
 
 	w := &Watcher{
-		informer:            informer,
+		informers:           informerList,
 		stopper:             make(chan struct{}),
 		objectMetadataCache: NewMetadataResolver(cacheSize),
 		omitLookup:          omitLookup,
@@ -50,12 +55,43 @@ func NewWatcher(config *rest.Config, namespace string, MaxEventAgeSeconds int64,
 		clientset:           clientset,
 	}
 
-	informer.AddEventHandler(w)
-	informer.SetWatchErrorHandler(func(r *cache.Reflector, err error) {
-		w.counters.WatchErrors.Inc()
-	})
+	for _, informer := range w.informers {
+		informer.AddEventHandler(w)
+		informer.SetWatchErrorHandler(func(r *cache.Reflector, err error) {
+			w.counters.WatchErrors.Inc()
+		})
+	}
+
+	slog.Info("watcher namespaces configured", "namespaces", namespaces)
 
 	return w
+}
+
+func parseNamespaces(namespaceCSV string) []string {
+	if strings.TrimSpace(namespaceCSV) == "" {
+		return []string{""}
+	}
+
+	seen := make(map[string]struct{})
+	namespaces := make([]string, 0)
+
+	for _, ns := range strings.Split(namespaceCSV, ",") {
+		namespace := strings.TrimSpace(ns)
+		if namespace == "" {
+			continue
+		}
+		if _, exists := seen[namespace]; exists {
+			continue
+		}
+		seen[namespace] = struct{}{}
+		namespaces = append(namespaces, namespace)
+	}
+
+	if len(namespaces) == 0 {
+		return []string{""}
+	}
+
+	return namespaces
 }
 
 func (e *Watcher) OnAdd(obj interface{}, isInInitialList bool) {
@@ -144,11 +180,13 @@ func (e *Watcher) OnDelete(obj interface{}) {
 }
 
 func (e *Watcher) Start() {
-	e.wg.Add(1)
-	go func() {
-		defer e.wg.Done()
-		e.informer.Run(e.stopper)
-	}()
+	for _, informer := range e.informers {
+		e.wg.Add(1)
+		go func(i cache.SharedInformer) {
+			defer e.wg.Done()
+			i.Run(e.stopper)
+		}(informer)
+	}
 }
 
 func (e *Watcher) Stop() {

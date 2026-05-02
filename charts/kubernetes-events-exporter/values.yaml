@@ -82,6 +82,7 @@ config:
   logLevel: info
   logFormat: json
   maxEventAgeSeconds: 60
+  # namespace: "default,kube-system"
   metricsNamePrefix: "event_exporter_"
   # clusterName: ""
   # clusterEnvironment: ""

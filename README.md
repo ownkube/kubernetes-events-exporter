@@ -78,7 +78,7 @@ logFormat: json             # json | text
 maxEventAgeSeconds: 60      # discard events older than this (default: 5)
 kubeQPS: 100                # K8s API rate limit (QPS)
 kubeBurst: 500              # K8s API rate limit (burst)
-namespace: ""               # watch a specific namespace (default: all)
+namespace: ""               # watch one or more namespaces (CSV, default: all)
 clusterName: "prod-us-1"    # optional, added to every event as clusterName
 clusterEnvironment: "prod"  # optional, added to every event as clusterEnvironment
 metricsNamePrefix: "event_exporter_"  # prefix for Prometheus metrics

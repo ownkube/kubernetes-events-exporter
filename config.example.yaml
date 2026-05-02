@@ -19,8 +19,8 @@ clusterEnvironment: "production"      # e.g. production, staging, dev
 # kubeQPS: 100
 # kubeBurst: 500
 
-# Optional: watch only one namespace (default: all)
-# namespace: my-namespace
+# Optional: watch one or more namespaces (comma-separated, default: all)
+# namespace: my-namespace,monitoring
 
 # Optional: skip looking up labels/annotations on involved objects
 # omitLookup: false

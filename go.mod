@@ -3,7 +3,7 @@ module github.com/ownkube/kubernetes-events-exporter
 go 1.26.0
 
 require (
-	cloud.google.com/go/bigquery v1.76.0
+	cloud.google.com/go/bigquery v1.77.0
 	cloud.google.com/go/pubsub v1.50.2
 	github.com/IBM/sarama v1.48.0
 	github.com/Masterminds/sprig/v3 v3.2.3

@@ -15,7 +15,7 @@ require (
 	github.com/opsgenie/opsgenie-go-sdk-v2 v1.2.14
 	github.com/prometheus/client_golang v1.20.4
 	github.com/prometheus/exporter-toolkit v0.16.0
-	github.com/slack-go/slack v0.23.0
+	github.com/slack-go/slack v0.25.0
 	github.com/stretchr/testify v1.11.1
 	github.com/xdg-go/scram v1.1.2
 	google.golang.org/api v0.276.0

@@ -2,7 +2,7 @@
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kubernetes-events-exporter)](https://artifacthub.io/packages/search?repo=kubernetes-events-exporter)
 
-> **Actively maintained fork** of [resmoio/kubernetes-events-exporter](https://github.com/resmoio/kubernetes-events-exporter) (itself a fork of the original [Opsgenie exporter](https://github.com/opsgenie/kubernetes-events-exporter)). The upstream repository has been dormant since Resmo was acquired by JumpCloud in 2024. This fork consolidates the best fixes and features from multiple community forks (ClickHouse, LinkedIn, honestica) into a single, maintained project.
+> **Actively maintained fork**, by [Ownkube](https://ownkube.io), of [resmoio/kubernetes-events-exporter](https://github.com/resmoio/kubernetes-events-exporter) (itself a fork of the original [Opsgenie exporter](https://github.com/opsgenie/kubernetes-events-exporter)). The upstream repository has been dormant since Resmo was acquired by JumpCloud in 2024. This fork consolidates the best fixes and features from multiple community forks (ClickHouse, LinkedIn, honestica) into a single, maintained project.
 
 This tool allows exporting the often missed Kubernetes events to various outputs so that they can be used for
 observability or alerting purposes. You won't believe what you are missing.

@@ -124,6 +124,10 @@ func (e *Watcher) onEvent(ev *corev1.Event) {
 			if errors.IsNotFound(err) {
 				enriched.InvolvedObject.Deleted = true
 				slog.Error("Object not found, likely deleted", "error", err)
+			} else if errors.IsForbidden(err) {
+				// The chart grants read access to common kinds only; events about
+				// anything else are still exported, just without labels (#98).
+				slog.Debug("No read access to involved object, skipping metadata", "kind", ev.InvolvedObject.Kind, "error", err)
 			} else {
 				slog.Error("Failed to get object metadata", "error", err)
 			}

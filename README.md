@@ -66,6 +66,12 @@ See [`charts/kubernetes-events-exporter/values.yaml`](charts/kubernetes-events-e
 
 > **Note:** The Bitnami Helm chart was deprecated in August 2025. This is the replacement first-party chart.
 
+**Permissions.** The chart grants read access to events plus `get` on common
+kinds (pods, nodes, deployments and so on) for metadata enrichment. It never
+grants access to Secrets or ConfigMaps. Use `rbac.extraRules` to add CRDs,
+`config.omitLookup: true` for events only, or `config.namespace` for a
+namespaced Role. See the [chart README](charts/kubernetes-events-exporter/README.md#permissions).
+
 ## Configuration
 
 Configuration is done via a YAML file (ConfigMap when running in Kubernetes). The tool watches all events and lets you filter, route, and deliver them to various sinks.

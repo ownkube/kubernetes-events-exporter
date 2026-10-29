@@ -49,3 +49,26 @@ Service account name
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Leader election is on when either the top-level leaderElection.enabled or
+config.leaderElection.enabled is true. Renders "true" or nothing.
+*/}}
+{{- define "kubernetes-events-exporter.leaderElection" -}}
+{{- $cfg := .Values.config.leaderElection | default dict }}
+{{- if or .Values.leaderElection.enabled $cfg.enabled }}true{{ end }}
+{{- end }}
+
+{{/*
+Exporter config as written to the ConfigMap, with the top-level
+leaderElection.enabled folded into config.leaderElection.
+*/}}
+{{- define "kubernetes-events-exporter.config" -}}
+{{- $cfg := deepCopy .Values.config }}
+{{- if include "kubernetes-events-exporter.leaderElection" . }}
+{{- $le := $cfg.leaderElection | default dict }}
+{{- $_ := set $le "enabled" true }}
+{{- $_ := set $cfg "leaderElection" $le }}
+{{- end }}
+{{- toYaml $cfg }}
+{{- end }}

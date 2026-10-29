@@ -18,6 +18,49 @@ serviceAccount:
 
 rbac:
   create: true
+  # Read access to events is always granted. The rules below add `get` on the
+  # objects events are usually about, so each event can carry that object's
+  # labels, annotations and owners. Secrets and ConfigMaps are left out on
+  # purpose. Events about any other kind are still exported, without that
+  # metadata. Add kinds (CRDs, for example) with extraRules, or replace the
+  # list with rules. Neither is rendered when config.omitLookup is true.
+  # When config.namespace is set, a Role in that namespace is created instead
+  # of a ClusterRole, and cluster-scoped kinds (nodes, persistentvolumes) are
+  # not readable.
+  rules:
+    - apiGroups: [""]
+      resources:
+        - pods
+        - nodes
+        - services
+        - endpoints
+        - persistentvolumeclaims
+        - persistentvolumes
+        - replicationcontrollers
+        - namespaces
+      verbs: ["get"]
+    - apiGroups: ["apps"]
+      resources: [deployments, replicasets, statefulsets, daemonsets]
+      verbs: ["get"]
+    - apiGroups: ["batch"]
+      resources: [jobs, cronjobs]
+      verbs: ["get"]
+    - apiGroups: ["autoscaling"]
+      resources: [horizontalpodautoscalers]
+      verbs: ["get"]
+    - apiGroups: ["policy"]
+      resources: [poddisruptionbudgets]
+      verbs: ["get"]
+    - apiGroups: ["networking.k8s.io"]
+      resources: [ingresses]
+      verbs: ["get"]
+    - apiGroups: ["discovery.k8s.io"]
+      resources: [endpointslices]
+      verbs: ["get"]
+  extraRules: []
+    # - apiGroups: ["cert-manager.io"]
+    #   resources: [certificates]
+    #   verbs: ["get"]
 
 podAnnotations:
   prometheus.io/scrape: "true"
@@ -58,7 +101,8 @@ serviceMonitor:
   # interval: 30s
   # additionalLabels: {}
 
-# Leader election for HA deployments
+# Leader election for HA deployments. Sets config.leaderElection.enabled and
+# creates a Role for the lease in the release namespace.
 leaderElection:
   enabled: false
 

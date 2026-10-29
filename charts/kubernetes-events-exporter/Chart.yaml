@@ -2,9 +2,9 @@ apiVersion: v2
 name: kubernetes-events-exporter
 description: Export Kubernetes events to multiple destinations with routing and filtering
 type: application
-version: 0.2.0
-appVersion: "0.2.0"
-home: https://github.com/ownkube/kubernetes-events-exporter
+version: 0.2.1
+appVersion: "0.2.1"
+home: https://ownkube.io
 sources:
   - https://github.com/ownkube/kubernetes-events-exporter
 keywords:

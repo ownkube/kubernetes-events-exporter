@@ -1,30 +1,74 @@
 {{- if .Values.rbac.create -}}
+{{- $fullname := include "kubernetes-events-exporter.fullname" . }}
+{{- $watchNamespace := .Values.config.namespace }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: {{ if $watchNamespace }}Role{{ else }}ClusterRole{{ end }}
 metadata:
-  name: {{ include "kubernetes-events-exporter.fullname" . }}
+  name: {{ $fullname }}
+  {{- if $watchNamespace }}
+  namespace: {{ $watchNamespace }}
+  {{- end }}
   labels:
     {{- include "kubernetes-events-exporter.labels" . | nindent 4 }}
 rules:
-  - apiGroups: ["*"]
-    resources: ["*"]
-    verbs: ["get", "watch", "list"]
-  - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+  {{- if not .Values.config.omitLookup }}
+  {{- with .Values.rbac.rules }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.rbac.extraRules }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: {{ if $watchNamespace }}RoleBinding{{ else }}ClusterRoleBinding{{ end }}
 metadata:
-  name: {{ include "kubernetes-events-exporter.fullname" . }}
+  name: {{ $fullname }}
+  {{- if $watchNamespace }}
+  namespace: {{ $watchNamespace }}
+  {{- end }}
   labels:
     {{- include "kubernetes-events-exporter.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ include "kubernetes-events-exporter.fullname" . }}
+  kind: {{ if $watchNamespace }}Role{{ else }}ClusterRole{{ end }}
+  name: {{ $fullname }}
 subjects:
   - kind: ServiceAccount
     name: {{ include "kubernetes-events-exporter.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- if include "kubernetes-events-exporter.leaderElection" . }}
+---
+# Leader election holds a Lease in the pod's own namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $fullname }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubernetes-events-exporter.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "create", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $fullname }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubernetes-events-exporter.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $fullname }}-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kubernetes-events-exporter.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
 {{- end }}

@@ -76,7 +76,20 @@ func main() {
 
 	cfg.SetDefaults()
 
-	slog.Info("Starting with config", "config", cfg)
+	// Log a summary only: receiver blocks can hold credentials (passwords,
+	// API keys, tokens), so the full config never goes to the log (#97).
+	receivers := make([]string, 0, len(cfg.Receivers))
+	for _, r := range cfg.Receivers {
+		receivers = append(receivers, r.Name)
+	}
+	slog.Info("Starting",
+		"namespace", cfg.Namespace,
+		"receivers", receivers,
+		"leaderElection", cfg.LeaderElection.Enabled,
+		"omitLookup", cfg.OmitLookup,
+		"maxEventAgeSeconds", cfg.MaxEventAgeSeconds,
+		"clusterName", cfg.ClusterName,
+		"clusterEnvironment", cfg.ClusterEnvironment)
 
 	if err := cfg.Validate(); err != nil {
 		slog.Error("config validation failed", "error", err)

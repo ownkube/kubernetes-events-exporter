@@ -70,7 +70,7 @@ Helm chart in `charts/kubernetes-events-exporter/`. Runs as non-root on distrole
 
 ## Key Dependencies
 
-- Go 1.26, K8s client-go v0.26.7, ES client v8
+- Go 1.26, K8s client-go v0.36, ES client v8
 - slog (logging), Sprig (templates), IBM/sarama (Kafka), go-yaml (config parsing)
 - CI runs `go build` + `go test` on push/PR; releases publish multi-arch images to GHCR
 

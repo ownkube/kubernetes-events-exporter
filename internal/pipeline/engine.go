@@ -16,6 +16,8 @@ type Pipeline struct {
 }
 
 func NewPipeline(cfg *config.AppConfig, registry dispatch.Dispatcher) *Pipeline {
+	applyReceiverDefaults(cfg)
+
 	for _, v := range cfg.Receivers {
 		handler, err := v.GetHandler()
 		if err != nil {
@@ -33,6 +35,24 @@ func NewPipeline(cfg *config.AppConfig, registry dispatch.Dispatcher) *Pipeline 
 	return &Pipeline{
 		Route:    cfg.Route,
 		Registry: registry,
+	}
+}
+
+func applyReceiverDefaults(cfg *config.AppConfig) {
+	for idx := range cfg.Receivers {
+		receiver := &cfg.Receivers[idx]
+		if receiver.Prometheus == nil {
+			continue
+		}
+
+		if receiver.Prometheus.MetricExpirationSeconds != 0 {
+			continue
+		}
+
+		receiver.Prometheus.MetricExpirationSeconds = cfg.MaxEventAgeSeconds
+		slog.Info("Prometheus metricExpirationSeconds inherited from maxEventAgeSeconds",
+			"receiver", receiver.Name,
+			"metricExpirationSeconds", receiver.Prometheus.MetricExpirationSeconds)
 	}
 }
 

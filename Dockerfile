@@ -2,11 +2,16 @@ FROM --platform=$BUILDPLATFORM golang:1.26 AS builder
 
 ARG VERSION
 ARG TARGETOS TARGETARCH
-ENV PKG github.com/ownkube/kubernetes-events-exporter/internal/buildinfo
+ENV PKG=github.com/ownkube/kubernetes-events-exporter/internal/buildinfo
 
 ADD . /app
 WORKDIR /app
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w -X ${PKG}.Version=${VERSION}" -a -o /main ./cmd/exporter
+RUN set -eu; \
+		LDFLAGS="-s -w"; \
+		if [ -n "${VERSION:-}" ]; then \
+			LDFLAGS="$LDFLAGS -X ${PKG}.Version=${VERSION}"; \
+		fi; \
+		CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="$LDFLAGS" -a -o /main ./cmd/exporter
 
 FROM gcr.io/distroless/static:nonroot
 COPY --from=builder --chown=nonroot:nonroot /main /kubernetes-events-exporter

@@ -131,6 +131,7 @@ config:
     - name: "prometheus"
       prometheus:
         eventsMetricsNamePrefix: "event_exporter_"
+        metricExpirationSeconds: 60 # optional; if omitted, inherits config.maxEventAgeSeconds
         reasonFilter:
           Pod:
             - "FailedScheduling"
@@ -139,13 +140,13 @@ config:
             - "SuccessfulCreate"
 ```
 
-This configuration produces a single metric named `event_exporter_event_count` with labels: `kind`, `name`, `namespace`, `reason`, and `source_component`.
+This configuration produces a single metric named `event_exporter_event_count` with labels: `name`, `namespace`, `involved_object_namespace`, `involved_object_name`, `involved_object_kind`, `reason`, `type`, and `source`.
 
 Example series:
 
 ```text
-event_exporter_event_count{kind="pod",name="nginx-abc",namespace="default",reason="FailedScheduling",source_component="kubelet"}
-event_exporter_event_count{kind="replicaset",name="web-6f6c9d",namespace="apps",reason="FailedCreate",source_component="replicaset-controller"}
+event_exporter_event_count{name="nginx-abc.18abb4535003c611",namespace="default",involved_object_namespace="default",involved_object_name="nginx-abc",involved_object_kind="Pod",reason="FailedScheduling",type="Warning",source="node-01/kubelet"}
+event_exporter_event_count{name="web-6f6c9d.18abb4535003d222",namespace="apps",involved_object_namespace="apps",involved_object_name="web-6f6c9d",involved_object_kind="ReplicaSet",reason="FailedCreate",type="Warning",source="controller-manager/replicaset-controller"}
 ```
 
 ### HA deployment with leader election

@@ -17,6 +17,7 @@ observability or alerting purposes. You won't believe what you are missing.
 
 ### New Features
 - **Prometheus sink** — Convert Kubernetes events into Prometheus gauge metrics, filterable by resource kind and reason. Enables alerting on events via Prometheus/Grafana.
+- **Prometheus metric expiration** — Optional TTL removes stale event-derived series after a configurable period without matching events.
 - **Loki basic auth** — New `username` and `password` fields for Loki, supporting Grafana Enterprise/Cloud.
 - **Loki stream label templates** — Stream labels now support Go templates (e.g., `"{{ .InvolvedObject.Namespace }}"`).
 - **ClusterEnvironment field** — New config option to tag events with an environment label (prod, staging, etc.).
@@ -209,6 +210,7 @@ receivers:
   - name: "prometheus"
     prometheus:
       eventsMetricsNamePrefix: "event_exporter_"  # default
+      metricExpirationSeconds: 60  # optional; if omitted, inherits maxEventAgeSeconds
       reasonFilter:
         Pod:
           - "FailedMount"
@@ -219,7 +221,7 @@ receivers:
           - "MemoryPressure"
 ```
 
-This creates gauge metrics like `event_exporter_pod_event_count{pod="nginx-abc", namespace="default", reason="CrashLoopBackOff"}`.
+This creates gauge metrics like `event_exporter_event_count{name="nginx-abc.18abb4535003c611",namespace="default",involved_object_namespace="default",involved_object_name="nginx-abc",involved_object_kind="Pod",reason="CrashLoopBackOff",type="Warning",source="node-01/kubelet"}`.
 
 ### Opsgenie
 

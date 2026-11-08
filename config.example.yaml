@@ -94,6 +94,9 @@ receivers:
   - name: "prometheus-events"
     prometheus:
       eventsMetricsNamePrefix: "event_exporter_"
+      # Remove stale metric series after this many seconds without a matching event.
+      # If omitted, this inherits the global maxEventAgeSeconds value.
+      # metricExpirationSeconds: 60
       reasonFilter:
         Pod:
           - "CrashLoopBackOff"

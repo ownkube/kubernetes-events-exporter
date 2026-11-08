@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	Version   = "unknown"
+	Version   = "0.1.2"
 	GoVersion = runtime.Version()
 	GoOS      = runtime.GOOS
 	GoArch    = runtime.GOARCH

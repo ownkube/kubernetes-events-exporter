@@ -17,7 +17,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.17.1
 	github.com/slack-go/slack v0.27.0
 	github.com/stretchr/testify v1.11.1
-	github.com/xdg-go/scram v1.1.2
+	github.com/xdg-go/scram v1.4.0
 	google.golang.org/api v0.290.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -97,7 +97,6 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
